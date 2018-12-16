@@ -18,6 +18,23 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Reference:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="refCombo"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Compare:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QComboBox" name="columnCombo">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -77,6 +94,9 @@
        <bool>true</bool>
       </attribute>
       <attribute name="verticalHeaderVisible">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="verticalHeaderCascadingSectionResizes">
        <bool>false</bool>
       </attribute>
      </widget>
@@ -89,7 +109,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

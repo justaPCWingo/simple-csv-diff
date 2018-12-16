@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 from Ui_MainWindow import Ui_MainWindow
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, QVariant
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, QVariant,QEvent
 
 from PyQt5.QtWidgets import QMainWindow
 
@@ -16,26 +16,30 @@ class TableModel(QAbstractTableModel):
         self._c2=c2
 
         self.selectedKey = key
-        self.headers=[os.path.basename(c1.path),os.path.basename(c2.path),"Diff"]
+        self.refKey = key
+        self.headers=[key,os.path.basename(c1.path),os.path.basename(c2.path),"Diff"]
         
         
     def rowCount(self, parent=QModelIndex()):
         return max(len(self._c1.data),len(self._c2.data))
 
     def columnCount(self, parent=QModelIndex()):
-        return 3
+        return len(self.headers)
 
     def data(self, index, role=Qt.DisplayRole):
         
         r = index.row()
         c = index.column()
         k = self.selectedKey
+        k2 = self.refKey
         if role == Qt.DisplayRole:
             if c == 0 and len(self._c1.data)>r:
+                return str(self._c1.data[r][k2])+'|'+str(self._c2.data[r][k2])
+            if c == 1 and len(self._c1.data)>r:
                 return self._c1.data[r][k]
-            elif c == 1 and len(self._c2.data)>r:
+            elif c == 2 and len(self._c2.data)>r:
                 return self._c2.data[r][k]
-            elif c == 2:
+            elif c == 3:
                 try:
                     return QVariant(abs(float(self._c1.data[r][k])-float(self._c2.data[r][k])))
                 except:
@@ -43,9 +47,12 @@ class TableModel(QAbstractTableModel):
         return QVariant()
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-
-        if role == Qt.DisplayRole and orientation==Qt.Horizontal:
-            return QVariant(self.headers[section])
+        self.headers[0]=self.refKey
+        if role == Qt.DisplayRole:
+            if orientation==Qt.Horizontal:
+                return QVariant(self.headers[section])
+            else:
+                return QVariant(section+1)
         return QVariant()
 
     def sumDiffs(self):
@@ -54,12 +61,18 @@ class TableModel(QAbstractTableModel):
         tot=0
         k = self.selectedKey
         for i in range(len(self._c1.data)):
-            tot+=abs(float(self._c1.data[i][k]) - float(self._c2.data[i][k]))
+            try:
+              tot+=abs(float(self._c1.data[i][k]) - float(self._c2.data[i][k]))
+            except ValueError:
+              tot=float("nan")
+              break
         
         return tot
     
     def refreshIfNeeded(self):
-        return self._c1.RefreshIfNeeded() or self._c2.RefreshIfNeeded()
+        r1=self._c1.RefreshIfNeeded()
+        r2=self._c2.RefreshIfNeeded()
+        return r1 or r2
 
 class MainWindow(QMainWindow):
     def __init__(self,c1,c2,parent=None):
@@ -68,7 +81,7 @@ class MainWindow(QMainWindow):
         ui=Ui_MainWindow()
         ui.setupUi(self)
 
-        colKeys = list(set(c1.keys).intersection(c2.keys))
+        colKeys = sorted(list(set(c1.keys).intersection(c2.keys)))
 
         self._mdl=TableModel(c1,c2,colKeys[0],self)
         ui.tableView.setModel(self._mdl)
@@ -77,17 +90,22 @@ class MainWindow(QMainWindow):
         ui.columnCombo.addItems(colKeys)
         ui.columnCombo.currentTextChanged.connect(self.updateCols)
         ui.columnCombo.setCurrentText(colKeys[0])
+        ui.refCombo.addItems(colKeys)
+        ui.refCombo.currentTextChanged.connect(self.updateCols)
+        ui.refCombo.addItems(colKeys)
         self.updateCols()
+
 
     def updateCols(self):
         self._mdl.selectedKey = self._ui.columnCombo.currentText()
+        self._mdl.refKey = self._ui.refCombo.currentText()
         tot = self._mdl.sumDiffs()
 
         self._ui.diffSumField.setText(str(tot) if tot is not None else "--")
         self._ui.tableView.reset()
 
-    def setFocus(self):
-
-        if self._mdl.refreshIfNeeded():
+    def changeEvent(self,event):
+        if event.type() == QEvent.ActivationChange and self._mdl.refreshIfNeeded():
+            print("Reloading")
             self._ui.tableView.reset()
         QMainWindow.setFocus(self)

@@ -1,7 +1,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-from Ui_MainWindow import Ui_MainWindow
+try:
+    from Ui_MainWindow import Ui_MainWindow
+except ImportError:
+    from .Ui_MainWindow import Ui_MainWindow
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, QVariant,QEvent
 
@@ -34,7 +37,10 @@ class TableModel(QAbstractTableModel):
         k2 = self.refKey
         if role == Qt.DisplayRole:
             if c == 0 and len(self._c1.data)>r:
-                return str(self._c1.data[r][k2])+'|'+str(self._c2.data[r][k2])
+                try:
+                    return str(self._c1.data[r][k2])+'|'+str(self._c2.data[r][k2])
+                except:
+                    return '--'
             if c == 1 and len(self._c1.data)>r:
                 return self._c1.data[r][k]
             elif c == 2 and len(self._c2.data)>r:
@@ -105,7 +111,13 @@ class MainWindow(QMainWindow):
         self._ui.tableView.reset()
 
     def changeEvent(self,event):
-        if event.type() == QEvent.ActivationChange and self._mdl.refreshIfNeeded():
-            print("Reloading")
-            self._ui.tableView.reset()
-        QMainWindow.setFocus(self)
+        if hasattr(self,'_ui'):
+            self._ui.statusbar.showMessage("Reloading files...")
+            if event.type() == QEvent.ActivationChange and self._mdl.refreshIfNeeded():
+                print("Reloading")
+                tot = self._mdl.sumDiffs()
+
+                self._ui.diffSumField.setText(str(tot) if tot is not None else "--")
+                self._ui.tableView.reset()
+            self._ui.statusbar.clearMessage()
+

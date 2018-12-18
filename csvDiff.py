@@ -5,7 +5,10 @@ import sys
 import os
 from argparse import ArgumentParser
 from PyQt5 import QtWidgets
-from MainWindow import MainWindow
+try:
+    from MainWindow import MainWindow
+except ImportError:
+    from .MainWindow import MainWindow
 
 class CsvRec(object):
     def __init__(self,path):
@@ -32,19 +35,21 @@ class CsvRec(object):
             return True
         return False
             
-
-if __name__=='__main__':
+def runcCsvDiff():
 
     prsr = ArgumentParser(description="Interactive tool for comparing csv columns")
-    prsr.add_argument("csv1",type=str,help="First File to compare")
-    prsr.add_argument("csv2",type=str,help="Second File to compare")
-    
-    args=prsr.parse_args()
+    prsr.add_argument("csv1", type=str, help="First File to compare")
+    prsr.add_argument("csv2", type=str, help="Second File to compare")
+
+    args = prsr.parse_args()
 
     f1 = CsvRec(args.csv1)
     f2 = CsvRec(args.csv2)
     app = QtWidgets.QApplication(sys.argv)
-    mainWindow = MainWindow(f1,f2)
-        
+    mainWindow = MainWindow(f1, f2)
+
     mainWindow.show()
     sys.exit(app.exec_())
+
+if __name__=='__main__':
+    runcCsvDiff()

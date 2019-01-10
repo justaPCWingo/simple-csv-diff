@@ -20,7 +20,10 @@ class TableModel(QAbstractTableModel):
 
         self.selectedKey = key
         self.refKey = key
-        self.headers=[key,os.path.basename(c1.path),os.path.basename(c2.path),"Diff"]
+        self.headers=[key,
+                      (os.path.basename(c1.path),c1),
+                      (os.path.basename(c2.path),c2),
+                      "Diff"]
         
         
     def rowCount(self, parent=QModelIndex()):
@@ -49,14 +52,20 @@ class TableModel(QAbstractTableModel):
                 try:
                     return QVariant(abs(float(self._c1.data[r][k])-float(self._c2.data[r][k])))
                 except:
-                    return QVariant("N/A")
+                    try:
+                        return QVariant('' if str(self._c1.data[r][k])==str(self._c2.data[r][k]) else '!!')
+                    except:
+                        pass
         return QVariant()
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         self.headers[0]=self.refKey
         if role == Qt.DisplayRole:
             if orientation==Qt.Horizontal:
-                return QVariant(self.headers[section])
+                ret=self.headers[section]
+                if type(ret)==tuple:
+                    ret= ret[0]+" ({})".format(len(ret[1].data))
+                return QVariant(ret)
             else:
                 return QVariant(section+1)
         return QVariant()
@@ -119,5 +128,6 @@ class MainWindow(QMainWindow):
 
                 self._ui.diffSumField.setText(str(tot) if tot is not None else "--")
                 self._ui.tableView.reset()
+                self._mdl.headerDataChanged.emit(Qt.Horizontal,1,2)
             self._ui.statusbar.clearMessage()
 
